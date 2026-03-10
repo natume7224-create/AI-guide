@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI図鑑 — あなたに合うAIが見つかる</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131c;
+    --surface2: #1c1c2e;
+    --border: rgba(255,255,255,0.07);
+    --text: #e8e8f0;
+    --muted: #7a7a9a;
+    --accent-lang: #4ff8c0;
+    --accent-image: #ff6eb4;
+    --accent-video: #ff9d4f;
+    --accent-code: #6eb4ff;
+    --accent-music: #c06eff;
+    --accent-voice: #fff06e;
+    --accent-search: #6effb4;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* NOISE TEXTURE */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* HEADER */
+  header {
+    position: relative;
+    padding: 80px 40px 60px;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  .header-glow {
+    position: absolute;
+    top: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 400px;
+    background: radial-gradient(ellipse, rgba(79,248,192,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .badge {
+    display: inline-block;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--accent-lang);
+    border: 1px solid var(--accent-lang);
+    padding: 4px 14px;
+    border-radius: 100px;
+    margin-bottom: 28px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards 0.2s;
+  }
+
+  h1 {
+    font-size: clamp(42px, 6vw, 80px);
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin-bottom: 20px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards 0.4s;
+  }
+
+  h1 span {
+    background: linear-gradient(135deg, var(--accent-lang), #6eb4ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    font-size: 16px;
+    color: var(--muted);
+    font-weight: 300;
+    line-height: 1.7;
+    max-width: 520px;
+    margin: 0 auto 48px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards 0.6s;
+  }
+
+  /* FILTER TABS */
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 0 40px;
+    margin-bottom: 56px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards 0.8s;
+  }
+
+  .filter-btn {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 20px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    white-space: nowrap;
+  }
+
+  .filter-btn:hover, .filter-btn.active {
+    border-color: rgba(255,255,255,0.25);
+    color: var(--text);
+    background: var(--surface2);
+  }
+
+  .filter-btn.active {
+    color: #fff;
+  }
+
+  /* GRID */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 20px;
+    padding: 0 40px 80px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* CARD */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    opacity: 0;
+    animation: fadeUp 0.5s ease forwards;
+  }
+
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+
+  .card-glow {
+    position: absolute;
+    top: -60px;
+    right: -60px;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    opacity: 0.12;
+    transition: opacity 0.3s ease;
+  }
+
+  .card:hover .card-glow { opacity: 0.22; }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .card-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+
+  .card-category {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    padding: 4px 10px;
+    border-radius: 100px;
+    border: 1px solid;
+    margin-top: 4px;
+  }
+
+  .card h2 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 10px;
+    line-height: 1.2;
+  }
+
+  .card-desc {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.75;
+    margin-bottom: 24px;
+    font-weight: 300;
+  }
+
+  /* TOOLS LIST */
+  .tools-label {
+    font-size: 11px;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .tools-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  .tool-tag {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+  }
+
+  .card:hover .tool-tag {
+    background: rgba(255,255,255,0.08);
+  }
+
+  /* USE CASES */
+  .use-cases {
+    border-top: 1px solid var(--border);
+    padding-top: 20px;
+  }
+
+  .use-cases-label {
+    font-size: 11px;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .use-case-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .use-case-list li {
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 400;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.5;
+  }
+
+  .use-case-list li::before {
+    content: '→';
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+
+  /* DIFFICULTY METER */
+  .meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .difficulty {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .dots {
+    display: flex;
+    gap: 4px;
+  }
+
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+
+  .dot.filled {
+    background: currentColor;
+  }
+
+  .free-badge {
+    font-size: 11px;
+    font-family: 'Space Mono', monospace;
+    padding: 3px 9px;
+    border-radius: 6px;
+    background: rgba(79,248,192,0.1);
+    color: var(--accent-lang);
+    border: 1px solid rgba(79,248,192,0.2);
+  }
+
+  .paid-badge {
+    font-size: 11px;
+    font-family: 'Space Mono', monospace;
+    padding: 3px 9px;
+    border-radius: 6px;
+    background: rgba(255,110,180,0.1);
+    color: var(--accent-image);
+    border: 1px solid rgba(255,110,180,0.2);
+  }
+
+  /* HIDDEN */
+  .card.hidden {
+    display: none;
+  }
+
+  /* FOOTER */
+  footer {
+    text-align: center;
+    padding: 40px;
+    font-size: 12px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* HERO STATS */
+  .stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    flex-wrap: wrap;
+    padding: 0 40px 60px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards 1s;
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat-num {
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ACCENT COLORS PER CATEGORY */
+  .lang .card-glow { background: var(--accent-lang); }
+  .lang .card-icon { background: rgba(79,248,192,0.12); }
+  .lang .card-category { color: var(--accent-lang); border-color: rgba(79,248,192,0.3); }
+  .lang .use-case-list li::before { color: var(--accent-lang); }
+  .lang:hover { border-color: rgba(79,248,192,0.25); }
+
+  .image .card-glow { background: var(--accent-image); }
+  .image .card-icon { background: rgba(255,110,180,0.12); }
+  .image .card-category { color: var(--accent-image); border-color: rgba(255,110,180,0.3); }
+  .image .use-case-list li::before { color: var(--accent-image); }
+  .image:hover { border-color: rgba(255,110,180,0.25); }
+
+  .video .card-glow { background: var(--accent-video); }
+  .video .card-icon { background: rgba(255,157,79,0.12); }
+  .video .card-category { color: var(--accent-video); border-color: rgba(255,157,79,0.3); }
+  .video .use-case-list li::before { color: var(--accent-video); }
+  .video:hover { border-color: rgba(255,157,79,0.25); }
+
+  .code .card-glow { background: var(--accent-code); }
+  .code .card-icon { background: rgba(110,180,255,0.12); }
+  .code .card-category { color: var(--accent-code); border-color: rgba(110,180,255,0.3); }
+  .code .use-case-list li::before { color: var(--accent-code); }
+  .code:hover { border-color: rgba(110,180,255,0.25); }
+
+  .music .card-glow { background: var(--accent-music); }
+  .music .card-icon { background: rgba(192,110,255,0.12); }
+  .music .card-category { color: var(--accent-music); border-color: rgba(192,110,255,0.3); }
+  .music .use-case-list li::before { color: var(--accent-music); }
+  .music:hover { border-color: rgba(192,110,255,0.25); }
+
+  .voice .card-glow { background: var(--accent-voice); }
+  .voice .card-icon { background: rgba(255,240,110,0.12); }
+  .voice .card-category { color: var(--accent-voice); border-color: rgba(255,240,110,0.3); }
+  .voice .use-case-list li::before { color: var(--accent-voice); }
+  .voice:hover { border-color: rgba(255,240,110,0.25); }
+
+  .search .card-glow { background: var(--accent-search); }
+  .search .card-icon { background: rgba(110,255,180,0.12); }
+  .search .card-category { color: var(--accent-search); border-color: rgba(110,255,180,0.3); }
+  .search .use-case-list li::before { color: var(--accent-search); }
+  .search:hover { border-color: rgba(110,255,180,0.25); }
+
+  @media (max-width: 600px) {
+    .grid { padding: 0 16px 60px; grid-template-columns: 1fr; }
+    header { padding: 60px 20px 40px; }
+    .filter-bar { padding: 0 16px; }
+    .stats-bar { gap: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-glow"></div>
+  <div class="badge">AI GUIDE 2025</div>
+  <h1>あなたに合う<br><span>AI</span>が見つかる</h1>
+  <p class="subtitle">数十種類あるAIツール、何が何に使えるの？<br>カテゴリ別にわかりやすく整理しました。</p>
+</header>
+
+<div class="stats-bar">
+  <div class="stat">
+    <div class="stat-num" style="color:var(--accent-lang)">7</div>
+    <div class="stat-label">カテゴリ</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num" style="color:var(--accent-image)">20+</div>
+    <div class="stat-label">AIツール紹介</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num" style="color:var(--accent-code)">無料</div>
+    <div class="stat-label">から始められる</div>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <button class="filter-btn active" data-filter="all">すべて</button>
+  <button class="filter-btn" data-filter="lang">💬 会話・文章</button>
+  <button class="filter-btn" data-filter="image">🎨 画像生成</button>
+  <button class="filter-btn" data-filter="video">🎬 動画生成</button>
+  <button class="filter-btn" data-filter="code">💻 コーディング</button>
+  <button class="filter-btn" data-filter="music">🎵 音楽生成</button>
+  <button class="filter-btn" data-filter="voice">🎙️ 音声・読み上げ</button>
+  <button class="filter-btn" data-filter="search">🔍 AI検索</button>
+</div>
+
+<div class="grid" id="grid">
+
+  <!-- LANG: Claude -->
+  <div class="card lang" style="animation-delay:0.1s" data-cat="lang">
+    <div class="card-glow"></div>
+    <div class="card-top">
+      <div class="card-icon">🤖</div>
+      <div class="card-category">会話・文章</div>
+    </div>
+    <h2>Claude</h2>
+    <p class="card-desc">Anthropic製。長文の理解・要約・執筆が得意。細かいニュアンスや倫理的な判断に優れており、論文や報告書レベルの文章を生成できる。</p>
+    <div class="tools-label">// 代表ツール</div>
+    <div class="tools-list">
+      <span class="tool-tag">Claude.ai</span>
+      <span class="tool-tag">Claude API</span>
+    </div>
+    <div class="use-cases">
+      <div class="use-cases-label">// こんな時に使う</div>
+      <ul class="use-case-list">
+        <li>長い文書の要約・翻訳</li>
+        <li>メールや報告書の下書き</li>
+        <li>アイデアのブレスト相手</li>
+        <li>複雑な質問への丁寧な回答</li>
+      </ul>
+    </div>
+    <div class="meta-row">
+      <div class="difficulty" style="color:var(--accent-lang)">
+        難易度
+        <div class="dots">
+          <div class="dot filled"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+      </div>
+      <span class="free-badge">無料あり</span>
+    </div>
+  </div>
+
+  <!-- LANG: ChatGPT -->
+  <div class="card lang" style="animation-delay:0.15s" data-cat="lang">
+    <div class="card-glow"></div>
+    <div class="card-top">
+      <div class="card-icon">💬</div>
+      <div class="card-category">会話・文章</div>
+    </div>
+    <h2>ChatGPT</h2>
+    <p class="card-desc">OpenAI製。最も有名な会話AIで、汎用性が高く何でもこなす万能選手。プラグインや画像生成(DALL·E)も統合されていて、初心者にも使いやすい。</p>
+    <div class="tools-label">// 代表ツール</div>
+    <div class="tools-list">
+      <span class="tool-tag">ChatGPT</span>
+      <span class="tool-tag">GPT-4o</span>
+      <span class="tool-tag">OpenAI API</span>
+    </div>
+    <div class="use-cases">
+      <div class="use-cases-label">// こんな時に使う</div>
+      <ul class="use-case-list">
+        <li>日常的な質問・調べもの</li>
+        <li>文章の校正・リライト</li>
+        <li>料理レシピや旅行計画</li>
+        <li>画像の説明・分析</li>
+      </ul>
+    </div>
+    <div class="meta-row">
+      <div class="difficulty" style="color:var(--accent-lang)">
+        難易度
+        <div class="dots">
+          <div class="dot filled"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+      </div>
+      <span class="free-badge">無料あり</span>
+    </div>
+  </div>
+
+  <!-- LANG: Gemini -->
+  <div class="card lang" style="animation-delay:0.2s" data-cat="lang">
+    <div class="card-glow"></div>
+    <div class="card-top">
+      <div class="card-icon">✨</div>
+      <div class="card-category">会話・文章</div>
+    </div>
+    <h2>Gemini</h2>
+    <p class="card-desc">Google製。Google検索・GmailやGoogle Docsとの連携が強み。リアルタイム情報へのアクセスや、YouTubeなどGoogle系サービスとの統合が優秀。</p>
+    <div class="tools-label">// 代表ツール</div>
+    <div class="tools-list">
+      <span class="tool-tag">Gemini</span>
+      <span class="tool-tag">NotebookLM</span>
+    </div>
+    <div class="use-cases">
+      <div class="use-cases-label">// こんな時に使う</div>
+      <ul class="use-case-list">
+        <li>最新ニュースの要約</li>
+        <li>Gmailの返信下書き</li>
+        <li>Googleスプレッドシートの自動化</li>
+        <li>YouTube動画の要約</li>
+      </ul>
+    </div>
+    <div class="meta-row">
+      <div class="difficulty" style="color:var(--accent-lang)">
+        難易度
+        <div class="dots">
+          <div class="dot filled"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+      </div>
+      <span class="free-badge">無料あり</span>
+    </div>
+  </div>
+
+  <!-- IMAGE: Midjourney -->
+  <div class="card image" style="animation-delay:0.25s" data-cat="image">
+    <div class="card-glow"></div>
+    <div class="card-top">
+      <div class="card-icon">🎨</div>
+      <div class="card-category">画像生成</div>
+    </div>
+    <h2>Midjourney</h2>
+    <p class="card-desc">クオリティと芸術性で世界トップクラス。テキストから驚くほどリアルで美しいアート作品を生成。プロのデザイナーやクリエイターも愛用している。</p>
+    <div class="tools-label">// 代表ツール</div>
+    <div class="tools-list">
+      <span class="tool-tag">Midjourney v7</span>
+      <span class="tool-tag">Discord Bot</span>
+    </div>
+    <div class="use-cases">
+      <div class="use-cases-label">// こんな時に使う</div>
+      <ul class="use-case-list">
+        <li>アート作品・イラストの制作</li>
+        <li>広告バナーやビジュアル素材</li>
+        <li>キャラクターデザインのアイデア出し</li>
+        <li>インテリアや建築のビジュアライズ</li>
+      </ul>
+    </div>
+    <div class="meta-row">
+      <div class="difficulty" style="color:var(--accent-image)">
+        難易度
+        <div class="dots">
+          <div class="dot filled"></div>
+          <div class="dot filled"></div>
+          <div class="dot"></div>
+        </div>
+      </div>
+      <span class="paid-badge">有料</span>
+    </div>
+  </div>
+
+  <!-- IMAGE: DALL-E / Adobe Firefly -->
+  <div class="card image" style="animation-delay:0.3s" data-cat="image">
+    <div class="card-glow"></div>
+    <div class="card-top">
+      <div class="card-icon">🖼️</div>
+      <div class="card-category">画像生成</div>
+    </div>
+    <h2>Adobe Firefly</h2>
+    <p class="card-desc">Adobe製で商用利用に強い。Photoshopなどのツールにも統合されており、既存の画像を拡張する「ジェネレーティブ塗りつぶし」が特に便利。</p>
+    <div class="tools-label">// 代表ツール</div>
+    <div class="tools-list">
+      <span class="tool-tag">Adobe Firefly</span>
+      <span class="tool-tag">Photoshop AI</span>
+      <span class="tool-tag">DALL·E 3</span>
+    </div>
+    <div class="use-cases">
+      <div class="use-cases-label">// こんな時に使う</div>
+      <ul class="use-case-list">
+        <li>写真の背景を差し替える</li>
+        <li>商用OKな素材を素早く作る</li>
+        <li>既存画像を自然に拡張する</li>
+        <li>テキストから写真風の画像生成</li>
+      </ul>
+    </div>
+    <div class="meta-row">
+      <div class="difficulty" style="color:var(--accent-image)">
+        難易度
+        <div class="dots">
+          <div class="dot filled"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+      </div>
+      <span class="free-badge">無料あり</span>
+    </div>
+  </div>
+
+  <!-- VIDEO: Runway -->
+  <div class="card video" style="animation-delay:0.35s" data-cat="video">
+    <div class="card-glow"></div>
+    <div class="card-top">
+      <div class="card-icon">🎬</div>
+      <div class="card-category">動画生成</div>
+    </div>
+    <h2>Runway</h2>
+    <p class="card-desc">テキストや画像から動画を生成するAI。映画的な映像表現が可能で、ハリウッドの映像制作現場でも使われ始めている。動画編集機能も豊富。</p>
+    <div class="tools-label">// 代表ツール</div>
+    <div class="tools-list">
+      <span class="tool-tag">Runway Gen-3</span>
+      <span class="tool-tag">Sora</span>
+      <span class="tool-tag">Kling</span>
+    </div>
+    <div class="use-cases">
+      <div class="use-cases-label">// こんな時に使う</div>
+      <ul class="use-case-list">
+        <li>SNS用のショート動画制作</li>
+        <li>商品紹介動画のプロトタイプ</li>
+        <li>映像コンテンツのアイデア出し</li>
+        <li>静止画をアニメーション化する</li>
+      </ul>
+    </div>
+    <div class="meta-row">
+      <div class="difficulty" style="color:var(--accent-video)">
+        難易度
+        <div class="dots">
+          <div class="dot filled"></div>
+          <div class="dot filled"></div>
+          <div class="dot"></div>
+        </div>
+      </div>
+      <span class="free-badge">無料あり</span>
+    </div>
+  </div>
+
+  <!-- VIDEO: HeyGen -->
+  <div class="card video" style="animation-delay:0.4s" data-cat="video">
+    <div class="card-glow"></div>
+    <div class="card-top">
+      <div class="card-icon">🎭</div>
+      <div class="card-category">動画生成</div>
+    </div>
+    <h2>HeyGen</h2>
+    <p class="card-desc">AIアバターが自然に話す動画を自動生成。顔や声をクローンする機能もあり、本人が出演しなくてもリアルな解説動画や多言語翻訳動画が作れる。</p>
+    <div class="tools-label">// 代表ツール</div>
+    <div class="tools-list">
+      <span class="tool-tag">HeyGen</span>
+      <span class="tool-tag">D-ID</span>
+    </div>
+    <div class="use-cases">
+      <div class="use-cases-label">// こんな時に使う</div>
+      <ul class="use-case-list">
+        <li>研修・説明動画の自動制作</li>
+        <li>多言語に翻訳した動画を作る</li>
+        <li>YouTubeのトーキングヘッド動画</li>
+        <li>アバターを使ったプレゼン</li>
+      </ul>
+    </div>
+    <div class="meta-row">
+      <div class="difficulty" style="color:var(--accent-video)">
+        難易度
+        <div class="dots">
+          <div class="dot filled"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+      </div>
+      <span class="free-badge">無料あり</span>
+    </div>
+  </div>
+
+  <!-- CODE: GitHub Copilot -->
+  <div class="card code" style="animation-delay:0.45s" data-cat="code">
+    <div class="card-glow"></div>
+    <div class="card-top">
+      <div class="card-icon">💻</div>
+      <div class="card-category">コーディング</div>
+    </div>
+    <h2>GitHub Copilot</h2>
+    <p class="card-desc">Microsoft/GitHub製のコーディング補助AI。VS Codeなどのエディタに統合され、コードを書きながらリアルタイムで次の行を提案してくれる頼れる相棒。</p>
+    <div class="tools-label">// 代表ツール</div>
+    <div class="tools-list">
+      <span class="tool-tag">GitHub Copilot</span>
+      <span class="tool-tag">VS Code拡張</span>
+    </div>
+    <div class="use-cases">
+      <div class="use-cases-label">// こんな時に使う</div>
+      <ul class="use-case-list">
+        <li>コード補完・自動生成</li>
+        <li>バグの原因を素早く発見</li>
+        <li>コメントから関数を生成</li>
+        <li>知らない言語のコードを書く</li>
+      </ul>
+    </div>
+    <div class="meta-row">
+      <div class="difficulty" style="color:var(--accent-code)">
+        難易度
+        <div class="dots">
+          <div class="dot filled"></div>
+          <div class="dot filled"></div>
+          <div class="dot"></div>
+        </div>
+      </div>
+      <span class="free-badge">無料あり</span>
+    </div>
+  </div>
+
+  <!-- CODE: Cursor -->
+  <div class="card code" style="animation-delay:0.5s" data-cat="code">
+    <div class="card-glow"></div>
+    <div class="card-top">
+      <div class="card-icon">⚡</div>
+      <div class="card-category">コーディング</div>
+    </div>
+    <h2>Cursor</h2>
+    <p class="card-desc">AIファーストなコードエディタ。プロジェクト全体のコードを理解した上でAIが提案するため、大規模な修正や機能追加が会話だけで完成する次世代ツール。</p>
+    <div class="tools-label">// 代表ツール</div>
+    <div class="tools-list">
+      <span class="tool-tag">Cursor IDE</span>
+      <span class="tool-tag">Claude Code</span>
+      <span class="tool-tag">Windsurf</span>
+    </div>
+    <div class="use-cases">
+      <div class="use-cases-label">// こんな時に使う</div>
+      <ul class="use-case-list">
+        <li>「○○の機能を追加して」と指示するだけ</li>
+        <li>コード全体のリファクタリング</li>
+        <li>エラーメッセージを貼って修正依頼</li>
+        <li>ノーコードに近い感覚で開発</li>
+      </ul>
+    </div>
+    <div class="meta-row">
+      <div class="difficulty" style="color:var(--accent-code)">
+        難易度
+        <div class="dots">
+          <div class="dot filled"></div>
+          <div class="dot filled"></div>
+          <div class="dot"></div>
+        </div>
+      </div>
+      <span class="free-badge">無料あり</span>
+    </div>
+  </div>
+
+  <!-- MUSIC: Suno -->
+  <div class="card music" style="animation-delay:0.55s" data-cat="music">
+    <div class="card-glow"></div>
+    <div class="card-top">
+      <div class="card-icon">🎵</div>
+      <div class="card-category">音楽生成</div>
+    </div>
+    <h2>Suno</h2>
+    <p class="card-desc">テキストで曲名とジャンル・歌詞を入力するだけで、ボーカル付きの楽曲を数秒で生成。「爽やかなポップス」「激しいメタル」など自然な言葉で指定できる。</p>
+    <div class="tools-label">// 代表ツール</div>
+    <div class="tools-list">
+      <span class="tool-tag">Suno</span>
+      <span class="tool-tag">Udio</span>
+    </div>
+    <div class="use-cases">
+      <div class="use-cases-label">// こんな時に使う</div>
+      <ul class="use-case-list">
+        <li>動画のBGM・主題歌を作る</li>
+        <li>オリジナルソングで誕生日を祝う</li>
+        <li>ゲームやアプリの効果音制作</li>
+        <li>プロトタイプ楽曲のアイデア出し</li>
+      </ul>
+    </div>
+    <div class="meta-row">
+      <div class="difficulty" style="color:var(--accent-music)">
+        難易度
+        <div class="dots">
+          <div class="dot filled"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+      </div>
+      <span class="free-badge">無料あり</span>
+    </div>
+  </div>
+
+  <!-- VOICE: ElevenLabs -->
+  <div class="card voice" style="animation-delay:0.6s" data-cat="voice">
+    <div class="card-glow"></div>
+    <div class="card-top">
+      <div class="card-icon">🎙️</div>
+      <div class="card-category">音声・読み上げ</div>
+    </div>
+    <h2>ElevenLabs</h2>
+    <p class="card-desc">テキストを驚くほど自然な音声に変換する最高クラスの音声AI。声のクローン機能や感情表現も精度が高く、ポッドキャストや有声本の制作に最適。</p>
+    <div class="tools-label">// 代表ツール</div>
+    <div class="tools-list">
+      <span class="tool-tag">ElevenLabs</span>
+      <span class="tool-tag">Voicevox</span>
+      <span class="tool-tag">VOICEPEAK</span>
+    </div>
+    <div class="use-cases">
+      <div class="use-cases-label">// こんな時に使う</div>
+      <ul class="use-case-list">
+        <li>動画のナレーション自動生成</li>
+        <li>自分の声のクローンを作る</li>
+        <li>多言語の音声コンテンツ制作</li>
+        <li>テキストを読み上げて耳で確認</li>
+      </ul>
+    </div>
+    <div class="meta-row">
+      <div class="difficulty" style="color:var(--accent-voice)">
+        難易度
+        <div class="dots">
+          <div class="dot filled"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+      </div>
+      <span class="free-badge">無料あり</span>
+    </div>
+  </div>
+
+  <!-- SEARCH: Perplexity -->
+  <div class="card search" style="animation-delay:0.65s" data-cat="search">
+    <div class="card-glow"></div>
+    <div class="card-top">
+      <div class="card-icon">🔍</div>
+      <div class="card-category">AI検索</div>
+    </div>
+    <h2>Perplexity</h2>
+    <p class="card-desc">「AIを使った検索エンジン」。リアルタイムでウェブを検索し、情報源を明示しながら回答を生成してくれる。Googleの代替として使う人も急増中。</p>
+    <div class="tools-label">// 代表ツール</div>
+    <div class="tools-list">
+      <span class="tool-tag">Perplexity AI</span>
+      <span class="tool-tag">Grok</span>
+    </div>
+    <div class="use-cases">
+      <div class="use-cases-label">// こんな時に使う</div>
+      <ul class="use-case-list">
+        <li>最新情報を出典付きで調べる</li>
+        <li>複数のサイトを横断した比較調査</li>
+        <li>論文や専門記事の要約</li>
+        <li>リアルタイムのニュース確認</li>
+      </ul>
+    </div>
+    <div class="meta-row">
+      <div class="difficulty" style="color:var(--accent-search)">
+        難易度
+        <div class="dots">
+          <div class="dot filled"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+      </div>
+      <span class="free-badge">無料あり</span>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  AI図鑑 — 2025年版 &nbsp;|&nbsp; 情報は随時変わります。各サービスの公式サイトも確認ください。
+</footer>
+
+<script>
+  // Filter functionality
+  const filterBtns = document.querySelectorAll('.filter-btn');
+  const cards = document.querySelectorAll('.card');
+
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const filter = btn.dataset.filter;
+
+      cards.forEach(card => {
+        if (filter === 'all' || card.dataset.cat === filter) {
+          card.classList.remove('hidden');
+          card.style.animation = 'none';
+          card.offsetHeight;
+          card.style.animation = 'fadeUp 0.4s ease forwards';
+          card.style.opacity = '1';
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+    });
+  });
+
+  // Staggered entry on load
+  cards.forEach((card, i) => {
+    card.style.animationDelay = `${0.1 + i * 0.07}s`;
+  });
+</script>
+</body>
+</html>
